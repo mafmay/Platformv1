@@ -2,6 +2,14 @@ version: "3"
 
 services:
   
+  mosquitto:
+    image: 'eclipse-mosquitto'
+    hostname: mosquitto
+    container_name: mosquitto
+    expose:
+      - "1883"
+    ports:
+      - "1883:1883"
   zookeeper:
     image: 'bitnami/zookeeper:latest'
     ports:
