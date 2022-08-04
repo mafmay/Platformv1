@@ -2,6 +2,14 @@ version: "3"
 
 services:
   
+  mosquitto:
+    image: 'eclipse-mosquitto'
+    hostname: mosquitto
+    container_name: mosquitto
+    expose:
+      - "1883"
+    ports:
+      - "1883:1883"
   zookeeper:
     image: 'bitnami/zookeeper:latest'
     ports:
@@ -21,11 +29,12 @@ services:
       - ALLOW_PLAINTEXT_LISTENER=yes
     depends_on:
       - zookeeper
+  
   influxdb:
     image: influxdb:latest
     volumes:
       # Mount for influxdb data directory and configuration
-      - /Users/anaisdotis-georgiou/temp/influxdb2:/var/lib/influxdb2:rw
+      - ./influxdb2:/var/lib/influxdb2:rw
     ports:
       - "8086:8086"
   # Use the influx cli to set up an influxdb instance. 
@@ -35,7 +44,7 @@ services:
     image: influxdb:latest
     volumes:
       # Mount for influxdb data directory and configuration
-      - /Users/anaisdotis-georgiou/temp/influxdb2:/var/lib/influxdb2:rw
+      - ./influxdb2:/var/lib/influxdb2:rw
       - ./ssl/influxdb-selfsigned.crt:/etc/ssl/influxdb-selfsigned.crt:rw
       - ./ssl/influxdb-selfsigned.key:/etc/ssl/influxdb-selfsigned.key:rw
     environment: 
@@ -60,12 +69,33 @@ services:
       # Mount for telegraf config
       - ./telegraf/mytelegraf.conf:/etc/telegraf/telegraf.conf
     env_file:
-      - ./influxv2.env
+      - ./influxdb2/influxv2.env
     environment: 
       - DOCKER_INFLUXDB_INIT_ORG=myorg
       - DOCKER_INFLUXDB_INIT_BUCKET=mybucket
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=mytoken
     depends_on:
       - influxdb_cli
+      - influxdb
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana-server
+    restart: always
+    depends_on:
+      - influxdb
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=
+    links:
+      - influxdb
+    ports:
+      - '3000:3000'
+    volumes:
+      - grafana_data:/var/lib/grafana
+      
 volumes:
-  influxdb2:
+  grafana_data: {}
+  influxdb_data: {}
+  telegraf_data: {}
